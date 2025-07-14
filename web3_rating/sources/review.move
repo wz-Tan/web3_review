@@ -1,6 +1,8 @@
 module web3_rating::review;
 
 //The review for an item
+use std::string::String;
+
 public struct Review has key, store{
     id:UID,
     owner: address,
@@ -24,11 +26,16 @@ fun calculate_total_score(rev:&mut Review):u64{
 
     let extrinsic_score=10*rev.votes;
     let vm=if (rev.has_poe) {2} else {1};
-    return (intrinsic_score+extrinsic_score)*vm
+    (intrinsic_score+extrinsic_score)*vm
+}
+
+fun get_total_score(rev: &mut Review) : u64{
+    review.update_total_score(rev);
+    rev.total_score;
 }
 
 fun update_total_score(rev:&mut Review){
-    rev.total_score=calculate_total_score(rev);
+    rev.total_score=review.calculate_total_score(rev);
 }
 
 fun upvote(rev:&mut Review){

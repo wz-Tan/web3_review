@@ -1,6 +1,8 @@
 module web3_rating::dashboard;
 
 //Collection of Services
+use std::string::String;
+
 public struct Dashboard has key,store{
     id:UID,
     service_type: String
