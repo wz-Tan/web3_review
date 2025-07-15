@@ -1,23 +1,18 @@
 module web3_rating::service;
 
 use std::string::String;
-use sui::balance::Balance;
-use sui::object_table::ObjectTable;
+use sui::balance::{Self, Balance};
+use sui::clock::Clock;
+use sui::coin::{Self,Coin};
+use sui::dynamic_field as df;
+use sui::object_table::{Self,ObjectTable};
 use sui::sui::SUI;
-use web3_rating::review::{Self as review,Review};
+use std::vector::index_of;
+
+use web3_rating::review::{Self, Review};
+use web3_rating::moderator::{Moderator};
 
 const MAX_REVIEWERS_TO_REWARD: u64 = 10;
-
-/// A capability that can be used to perform admin operations on a service
-public struct AdminCap has key, store {
-    id: UID,
-    service_id: ID
-}
-
-/// Represents a moderator that can be used to delete reviews
-public struct Moderator has key {
-    id: UID,
-}
 
 //Represents a service (Maybe like a freelancing site)
 public struct Service has key, store {
@@ -32,15 +27,15 @@ public struct Service has key, store {
 
 public fun upvote(service: &mut Service, review_id: ID) {
     let rev = &mut service.reviews[review_id];
-    review.upvote(rev);
-    reorder(service, review_id, review.get_total_score(rev));
+    review::upvote(rev);
+    reorder(service, review_id, review::get_total_score(rev));
 }
 
 // Reorders Reviews after Adding A New One (Add into top review if in top 10 or else just reorder)
 fun reorder(service: &mut Service, review_id: ID, total_score: u64) {
     //If not in array, add into array.
     //If already in array, remove and reinsert
-    let (contains, idx) = service.top_reviews.index_of(review_id);
+    let (contains, idx) = service.top_reviews.index_of(&review_id);
     if (!contains) {
         service.update_top_reviews(review_id, total_score)
     } else {
@@ -62,7 +57,7 @@ fun find_idx(service: &mut Service, total_score: u64): u64 {
     //Iterate through list items
     while (0<i) {
         let review_id = service.top_reviews[i];
-        if (review.get_total_score(review_id)>total_score) {
+        if (review::get_total_score(borrow_mut(service.reviews, &review_id))>total_score) {
             break
         };
         i = i-1;
