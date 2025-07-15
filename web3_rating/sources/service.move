@@ -4,9 +4,20 @@ use std::string::String;
 use sui::balance::Balance;
 use sui::object_table::ObjectTable;
 use sui::sui::SUI;
-use web3_rating::review::Review;
+use web3_rating::review::{Self as review,Review};
 
 const MAX_REVIEWERS_TO_REWARD: u64 = 10;
+
+/// A capability that can be used to perform admin operations on a service
+public struct AdminCap has key, store {
+    id: UID,
+    service_id: ID
+}
+
+/// Represents a moderator that can be used to delete reviews
+public struct Moderator has key {
+    id: UID,
+}
 
 //Represents a service (Maybe like a freelancing site)
 public struct Service has key, store {
@@ -20,9 +31,9 @@ public struct Service has key, store {
 }
 
 public fun upvote(service: &mut Service, review_id: ID) {
-    let review = &mut service.reviews[review_id];
-    review.upvote();
-    service.reorder(service, review_id, review.get_total_score());
+    let rev = &mut service.reviews[review_id];
+    review.upvote(rev);
+    reorder(service, review_id, review.get_total_score(rev));
 }
 
 // Reorders Reviews after Adding A New One (Add into top review if in top 10 or else just reorder)
@@ -51,7 +62,7 @@ fun find_idx(service: &mut Service, total_score: u64): u64 {
     //Iterate through list items
     while (0<i) {
         let review_id = service.top_reviews[i];
-        if (service.get_total_score(review_id)>total_score) {
+        if (review.get_total_score(review_id)>total_score) {
             break
         };
         i = i-1;

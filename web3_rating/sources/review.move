@@ -2,6 +2,7 @@ module web3_rating::review;
 
 //The review for an item
 use std::string::String;
+use sui::math::min;
 
 public struct Review has key, store{
     id:UID,
@@ -22,7 +23,7 @@ public struct Review has key, store{
 fun calculate_total_score(rev:&mut Review):u64{
     //let makes the variables into val, mut makes them var
     let mut intrinsic_score:u64=rev.len;
-    intrinsic_score=math::min(intrinsic_score,150);
+    intrinsic_score=min(intrinsic_score,150);
 
     let extrinsic_score=10*rev.votes;
     let vm=if (rev.has_poe) {2} else {1};
@@ -30,12 +31,12 @@ fun calculate_total_score(rev:&mut Review):u64{
 }
 
 fun get_total_score(rev: &mut Review) : u64{
-    review.update_total_score(rev);
-    rev.total_score;
+    update_total_score(rev);
+    rev.total_score
 }
 
 fun update_total_score(rev:&mut Review){
-    rev.total_score=review.calculate_total_score(rev);
+    rev.total_score=calculate_total_score(rev);
 }
 
 fun upvote(rev:&mut Review){
