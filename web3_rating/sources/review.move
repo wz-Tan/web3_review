@@ -32,28 +32,24 @@ public(package) fun new_review(
     owner: address,
     service_id: ID,
     content: String,
-    len: u64,
-    votes: u64,
-    time_issued: u64,
     has_poe: bool,
-    total_score: u64,
     overall_rate: u8,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Review {
-    let length = content.len();
+    let len = content.length();
     assert!(length>=MIN_REVIEW_CONTENT_LEN && length<=MAX_REVIEW_CONTENT_LEN, EInvalidContentLen);
     let mut new_review = Review {
         id: object::new(ctx),
-        owner: address,
-        service_id: ID,
-        content: String,
-        len: u64,
+        owner,
+        service_id,
+        content,
+        len,
         votes: 0,
         time_issued: clock.timestamp_ms(),
-        has_poe: bool,
+        has_poe,
         total_score: 0,
-        overall_rate: u8,
+        overall_rate,
     };
     new_review.total_score=new_review.calculate_total_score();
     new_review
