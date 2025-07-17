@@ -156,8 +156,8 @@ fun prune_top_reviews(service: &mut Service) {
 
 public fun upvote(service: &mut Service, review_id: ID) {
     let rev = &mut service.reviews[review_id];
-    review::upvote(rev);
-    reorder(service, review_id, review::get_total_score(rev));
+    review.upvote();
+    service.reorder(review_id, review.get_total_score(rev));
 }
 
 // Reorders Reviews after Adding A New One (Add into top review if in top 10 or else just reorder)
@@ -217,6 +217,40 @@ fun distribute_rewards(cap: &mut AdminCap, service: &mut Service, ctx: &mut TxCo
        //Make the balance into  a coin
        let reward=coin::from_balance(balance, ctx);
        let review_id= &service.top_reviews[i];
+       //Borrow Review Record from Service 
+       let record=df::borrow<ID,ReviewRecord>(&service_id, *review_id);
+       transfer::public_transfer(reward, record.owner);
+       i=i+1;
     };
+
     
 }
+
+//Add Coin
+public fun top_up_reward(service: &mut Service, coin: Coin<SUI>){
+    service.reward_pool.join(coin.into_balance());
+}
+
+//Generate Proof Of Experience
+public fun generate_proof_of_experience(cap: &AdminCap, service: &Service, recipient: address, ctx: &mut TxContext){
+    assert!(cap.service_id=service.id.to_inner(), EInvalidPermission);
+    let poe=ProofOfExperience{
+        id: object::new(ctx),
+        service_id:cap.service_id
+    };
+    transfer::transfer(poe,recipient)
+}
+
+//Remove Reviews
+fun remove_review(_: &Moderator, service: &mut Service, review_id: ID){
+    assert!(service.reviews.contains(review_id), ENotExists);
+    //Gets the review record of the deleted review
+    let record:ReviewRecord=df::remove(&mut service_id,review_id);
+    service.overall_rate=service.overall_rate-(record.overall_rate as u64);
+    let (contains, i) = service.top_reviews.index_of(&review.id);
+    if (contains){
+        service.top_reviews.remove(i);
+    };
+    service.reviews.remove(review_id).delete_review();
+}
+
